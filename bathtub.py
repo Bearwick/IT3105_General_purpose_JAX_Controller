@@ -10,11 +10,11 @@ class Bathtub():
         
         self.A = config.getint('Bathtub_Model', 'A')
         self.C = config.getint('Bathtub_Model', 'C')
-        self.H = config.getint('Bathtub_Model', 'H0')
+        self.H = config.getfloat('Bathtub_Model', 'H0')
         self.g = config.getfloat('Bathtub_Model', 'g')
-    
-    def update(self, U, D):
         
+    def update(self, U, D):
+        #print(f"Plant Input: U={U}, Disturbance={D}")
         Q = self.compute_flow_rate()
 
         B = self.compute_bathtub_volume(U, D, Q) #jax.grad(self.compute_bathtub_volume)(U, D, Q)

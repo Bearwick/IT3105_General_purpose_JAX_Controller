@@ -5,12 +5,21 @@ import configparser
 class Controller:
    
     def __init__(self):
-        self.error_history = []
+        self.error_history = jnp.array([])
         self.config = configparser.ConfigParser()
         self.config.read('config.ini')
     
-    def compute(self, error, dt):
+    def update(self, error, dt):
         raise NotImplementedError("Subclasses must implement this method.")
+    
+    def append_error(self, error):
+        self.error_history = jnp.append(self.error_history, error)  # Use JAX append
+
+    def get_parameters(self):
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    def set_parameters(self):
+        raise NotImplementedError('Subclasses must implement this method.')
 
 class PID_Controller(Controller):
     def __init__(self):
@@ -20,8 +29,14 @@ class PID_Controller(Controller):
         self.kd = self.config.getfloat('PID', 'kd')
         self.integral = 0
         self.prev_error = 0
+    
+    def get_parameters(self):
+        return jnp.array([self.kp, self.ki, self.kd])
+    
+    def set_parameters(self, new_parameters):
+        self.kp, self.ki, self.kd = new_parameters
 
-    def compute(self, error, dt):
+    def update(self, error, dt, parameters, state):
         """
         Compute the PID control signal.
 
@@ -32,20 +47,25 @@ class PID_Controller(Controller):
         Returns:
             control_signal (float): The computed control signal.
         """
-        self.error_history.append(error)
+        #self.append_error(error)
         # Proportional term
-        proportional = self.kp * error
+        proportional = parameters[0] * error
         
         # Integral term
-        self.integral += error * dt
-        integral = self.ki * self.integral
+        #self.integral += error * dt OLD
+        state['integral'] = error*dt + state.get('integral', 0)
+        integral = parameters[1] * state['integral']
         
         # Derivative term
-        derivative = self.kd * (error - self.prev_error) / dt
-        self.prev_error = error
+
+        derivative = parameters[2] * ((error - state.get('prev_error', 0)) / dt)
+        state['prev_error'] = error
         
         # Control signal
         control_signal = proportional + integral + derivative
+        
+        # Debugging
+       # print(f"Error: {error}, Proportional: {proportional}, Integral: {integral}, Derivative: {derivative}, Control Signal: {control_signal}")
         return control_signal
 
 
@@ -64,6 +84,6 @@ class AI_Controller(Controller):
         learning_rate
         """
     
-    def compute(self, error, dt):
+    def update(self, error, dt):
         return 0
    
