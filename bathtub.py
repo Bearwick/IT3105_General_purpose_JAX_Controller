@@ -1,5 +1,4 @@
 import jax.numpy as jnp
-import jax
 import configparser
 
 
@@ -14,12 +13,11 @@ class Bathtub():
         self.g = config.getfloat('Bathtub_Model', 'g')
         
     def update(self, U, D):
-        #print(f"Plant Input: U={U}, Disturbance={D}")
         Q = self.compute_flow_rate()
 
-        B = self.compute_bathtub_volume(U, D, Q) #jax.grad(self.compute_bathtub_volume)(U, D, Q)
+        B = self.compute_bathtub_volume(U, D, Q)
 
-        height_change = self.compute_water_height_change(B) #jax.grad(self.compute_water_height_change)(B)
+        height_change = self.compute_water_height_change(B)
 
         self.H += height_change
 

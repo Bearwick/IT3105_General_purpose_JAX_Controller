@@ -1,7 +1,11 @@
 import configparser
 import numpy as np
 import bathtub
-import controller
+import cournot_competition
+import robot_treadmill
+import rabbit_population
+import PID_controller
+import AI_controller
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
@@ -29,9 +33,9 @@ class CONSYS():
 
     def initialize_controller(self):
         if self.controller_type == 0:
-            return controller.PID_Controller()
+            return PID_controller.PID_Controller()
         elif self.controller_type == 1:
-            return controller.AI_Controller()
+            return AI_controller.AI_Controller()
         else:
             raise ValueError('Unknown Controller type number')
         
@@ -41,22 +45,22 @@ class CONSYS():
             return bathtub.Bathtub()
         elif self.plant_type == 1:
             self.target = self.config.getfloat('Cournot_Competition','target')
-            raise ValueError('Cournot')
+            return cournot_competition.Cournot_Competition()
         elif self.plant_type == 2:
-            self.target = self.config.getfloat('Plant_3','target')
-            raise ValueError('Plant 3')
+            self.target = self.config.getfloat('Rabbit_Population','target')
+            return rabbit_population.Rabbit_Population()
+        elif self.plant_type == 3:
+            self.target = self.config.getfloat('Robot_Treadmill', 'target')
+            return robot_treadmill.Robot_Treadmill()
         else:
             raise ValueError('Unknown Plant type number')
     
     def compute_MSE(self, error_history):
-        #Save MSE for visuals
         error_array = jnp.array(error_history)
         MSE = jnp.mean(jnp.square(error_array))
         return MSE
     
     def update_parameters(self, parameters, gradients):
-        # Save gradients for visuals only for PID classic
-
         updated_params = parameters - self.learning_rate * jnp.array(gradients)
         print('Params to be updated: ', updated_params)
         return updated_params 
@@ -73,7 +77,7 @@ class CONSYS():
         U = 0
         
         # c) for each timestep
-        print(f"{0}Timestep\tWater Height (H)\tControl Output (U)")
+        print(f"Timestep\tPrediction \tControl Output (U)")
         for t in range(self.timesteps):
             # update the plant
             Y = plant.update(U, disturbance_series[t])
@@ -84,7 +88,7 @@ class CONSYS():
             # save the error (E) for this timestep in an error history
             self.error_history.append(E)
 
-            print(f"{t+1}\t\t{Y.item():.4f} m\t\t{U.item():.4f}")
+            print(f"{t+1}\t\t{Y.item()} \t\t{U.item():.4f}")
 
         # d) Compute the MSE over the error history
         MSE = self.compute_MSE(self.error_history)
@@ -116,7 +120,9 @@ class CONSYS():
            
     def visualize(self, MSE_history, parameter_history=0):
         self.plot_MSE(MSE_history)
-        self.plot_parameters(parameter_history)
+
+        if self.controller_type == 0:
+            self.plot_parameters(parameter_history)
         plt.show()
 
     def plot_MSE(self, MSE_history):
@@ -124,7 +130,7 @@ class CONSYS():
         plt.plot(range(len(MSE_history)), MSE_history, label='MSE')
         plt.xlabel('Epochs')
         plt.ylabel('Mean Squared Error')
-        plt.title('MSE over Epochs')
+        plt.title('Learning Progression')
         plt.legend()
          
     def plot_parameters(self, parameter_history):
@@ -138,7 +144,7 @@ class CONSYS():
         plt.plot(range(len(kd_history)), kd_history, label='Kd')
         plt.xlabel('Epochs')
         plt.ylabel('Parameter Values')
-        plt.title('PID Parameters over Epochs')
+        plt.title('Control Parameters')
         plt.legend()
 
 if __name__ == "__main__":
