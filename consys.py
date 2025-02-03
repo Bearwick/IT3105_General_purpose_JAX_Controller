@@ -61,9 +61,10 @@ class CONSYS():
         return MSE
     
     def update_parameters(self, parameters, gradients):
-        updated_params = parameters - self.learning_rate * jnp.array(gradients)
-        print('Params to be updated: ', updated_params)
-        return updated_params 
+        updated_params = jax.tree_util.tree_map(
+        lambda p, g: p - self.learning_rate * g, parameters, gradients
+        )
+        return updated_params
 
     def run_one_epoch(self, parameters, state):
 
@@ -84,7 +85,6 @@ class CONSYS():
             E = self.target - Y
             # update the controller
             U = self.controller.update(E, self.dt, parameters, state)
-
             # save the error (E) for this timestep in an error history
             self.error_history.append(E)
 
@@ -94,13 +94,12 @@ class CONSYS():
         MSE = self.compute_MSE(self.error_history)
         return MSE
 
-
     def run_system(self):
         # 1. Initialize the controller's parameters.
         self.controller = self.initialize_controller()
 
         gradfunc = jax.value_and_grad(self.run_one_epoch, argnums=0)
-        parameters = jnp.array(self.controller.get_parameters())
+        parameters = self.controller.get_parameters()
         MSE_history = []
         parameter_history = [parameters]
 
@@ -114,7 +113,8 @@ class CONSYS():
             # f) Update the controllers parameters (k values for classic and the weights and biases for NN)
             parameters = self.update_parameters(parameters, gradients)
             parameter_history.append(parameters)
-            print(f'Gradients: {gradients}, Average error: {avg_error}')
+            
+            print(f'Average error: {avg_error}')
         
         self.visualize(MSE_history, parameter_history)
            
