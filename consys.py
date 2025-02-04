@@ -2,7 +2,6 @@ import configparser
 import numpy as np
 import bathtub
 import cournot_competition
-import robot_treadmill
 import rabbit_population
 import PID_controller
 import AI_controller
@@ -11,6 +10,8 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
 class CONSYS():
+
+    # Initializes the Controller System with its parameters
     def __init__(self):
        self.read_config()
        self.error_history = []
@@ -49,9 +50,6 @@ class CONSYS():
         elif self.plant_type == 2:
             self.target = self.config.getfloat('Rabbit_Population','target')
             return rabbit_population.Rabbit_Population()
-        elif self.plant_type == 3:
-            self.target = self.config.getfloat('Robot_Treadmill', 'target')
-            return robot_treadmill.Robot_Treadmill()
         else:
             raise ValueError('Unknown Plant type number')
     

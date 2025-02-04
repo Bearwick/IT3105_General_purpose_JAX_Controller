@@ -4,6 +4,8 @@ import numpy as np
 import jax
 
 class AI_Controller(Controller):
+
+    # Initializes the controller with its specific parameters.
     def __init__(self):
         super().__init__()
         self.hidden_layers = self.config.getint('Config', 'NN_layers')
@@ -15,14 +17,16 @@ class AI_Controller(Controller):
         self.bias_initial_min = self.config.getfloat('Config', 'bias_initial_min')
         self.bias_initial_max = self.config.getfloat('Config', 'bias_initial_max')
         self.learning_rate = self.config.getfloat('Config', 'learning_rate')
-        
+    
+    # Generates a list of the Neural Network, i.e., length is layers and values is number of neurons.
     def generate_layers(self):
         layers = [3]
-        for hl in range(self.hidden_layers):
+        for _ in range(self.hidden_layers):
             layers.append(self.neurons)
         layers.append(1)
         return layers
 
+    # Generates the parameters, i.e., a list of tuples including weights and biases.
     def gen_jaxnet_params(self):
         layers = self.generate_layers()
 
@@ -37,10 +41,10 @@ class AI_Controller(Controller):
 
         return params
     
+
     def activation_function(self, x, state):
         # 0=Sigmoid, 1=Tanh, 2=RELU
-
-        if state['nn_layer'] == self.hidden_layers:
+        if state['nn_layer'] == self.hidden_layers +2:
             self.activation_func = self.out_activation_func
 
         if self.activation_func == 0:
@@ -52,6 +56,7 @@ class AI_Controller(Controller):
         else:
             raise ValueError('Unknown activation function number')
 
+    # Makes a prediction on the features based on the neural network weights and biases. 
     def predict(self, all_params, features, state):
         activations = features
         state['nn_layer'] = 0
@@ -63,6 +68,7 @@ class AI_Controller(Controller):
     def get_parameters(self):
         return self.gen_jaxnet_params() 
     
+    # Calculates the features and returns the control signal
     def update(self, error, dt, parameters, state): 
         proportional = error
 
@@ -78,23 +84,3 @@ class AI_Controller(Controller):
 
         return jnp.mean(control_signal)
     
-
-    #TODO
-    # Is it correct to do mean on the control_signal?
-
-    #           H_layers    Neurons     Everage Error       PID
-
-    # Bathtub Results:                                      0.04
-    # Sigmoid:  2           300         0.1544              
-    # Tanh:     2           5           0.1925
-    # Relu:     2           5           0.1887
-
-    # Cournot Results:                                      0.02<
-    # Sigmoid:  2           5           0.0206
-    # Tanh:     2           5           0.0175
-    # Relu:     2           5           0.0163
-
-    # Rabbit Results:                                       ≈0.01
-    # Sigmoid:  2           5           1237382
-    # Tanh:     2           5           0.9774
-    # Relu:     2           5           1267264

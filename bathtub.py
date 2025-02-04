@@ -3,6 +3,8 @@ import configparser
 
 
 class Bathtub():
+
+    # Initializes the plant with its specific parameters
     def __init__(self):
         config = configparser.ConfigParser()
         config.read('config.ini')
@@ -11,7 +13,8 @@ class Bathtub():
         self.C = config.getint('Bathtub_Model', 'C')
         self.H = config.getfloat('Bathtub_Model', 'H0')
         self.g = config.getfloat('Bathtub_Model', 'g')
-        
+
+    # Receives error and disturbance, and returns the new water height.
     def update(self, U, D):
         Q = self.compute_flow_rate()
 

@@ -2,6 +2,8 @@ from controller import Controller
 import jax.numpy as jnp
 
 class PID_Controller(Controller):
+
+    # Initializes the controller specific parameters
     def __init__(self):
         super().__init__()
         self.kp = self.config.getfloat('PID', 'kp')
@@ -11,6 +13,7 @@ class PID_Controller(Controller):
     def get_parameters(self):
         return jnp.array([self.kp, self.ki, self.kd])
     
+    # Calculates the PID error and returns the control signal
     def update(self, error, dt, parameters, state):
         # Proportional term
         proportional = parameters[0] * error
